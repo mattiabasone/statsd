@@ -10,13 +10,24 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v4
 
             - uses: shivammathur/setup-php@v2
               with:
-                  php-version: 7.4
+                  php-version: 8.3
                   coverage: none
                   tools: composer:v2, cs2pr
+
+            -   name: Get composer cache directory
+                id: composer-cache
+                run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+            -   name: Cache composer dependencies
+                uses: actions/cache@v4
+                with:
+                    path: ${{ steps.composer-cache.outputs.dir }}
+                    key: ${{ runner.os }}-8.3-composer-${{ hashFiles('**/composer.lock') }}
+                    restore-keys: ${{ runner.os }}-8.3-composer-
 
             - run: composer update --no-progress
 
@@ -29,11 +40,11 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                php: ['7.4', '8.0', '8.1']
+                php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
                 stable: [true]
 
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v4
               with:
                   fetch-depth: 0
 
@@ -42,6 +53,17 @@ jobs:
                   php-version: ${{ matrix.php }}
                   coverage: pcov
                   tools: composer:v2
+
+            -   name: Get composer cache directory
+                id: composer-cache
+                run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+            -   name: Cache composer dependencies
+                uses: actions/cache@v4
+                with:
+                    path: ${{ steps.composer-cache.outputs.dir }}
+                    key: ${{ runner.os }}-${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
+                    restore-keys: ${{ runner.os }}-${{ matrix.php }}-composer-
 
             - run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
 
